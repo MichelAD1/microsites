@@ -1,11 +1,18 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import { client } from "../lib/sanity";
+import groq from "groq";
+import Layout from "../layouts/Layout.astro";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const microsites: {title: string; slug: {current: string}}[] = await client.fetch(
+  groq`*[_type == "microsite" && defined(slug.current)]|order(title asc){ title, slug }`
+);
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Microsites" description="Browse all microsites">
+  <h1>Microsites</h1>
+  <ul>
+    {microsites.map((m) => (
+      <li><a href={`${m.slug.current}`}>{m.title}</a></li>
+    ))}
+  </ul>
 </Layout>

@@ -1,0 +1,14 @@
+/* web/public/global.css */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #222;
+}
+header,
+footer {
+  padding: 1rem 2rem;
+  background: #f8f8f8;
+}
+main {
+  padding: 2rem;
+}
