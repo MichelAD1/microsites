@@ -10,14 +10,14 @@ export const prerender = true;
 const { slug } = Astro.params;
 
 export async function getStaticPaths() {
-  const raw: string[] = await client.fetch(
+  const raw = await client.fetch(
     groq`*[_type == "microsite" && defined(slug.current) && !(_id in path("drafts.**"))][].slug.current`
   );
-  const slugs = raw.map((s) => s.replace(/^\/+/, ""));
-  console.log("[getStaticPaths] slugs:", slugs);
-  return slugs.map((s) => ({ params: { slug: s } }));
+  const only = import.meta.env.MICROSITE?.split(",").map(s => s.replace(/^\/+/, ""));
+  const slugs = raw.map(s => s.replace(/^\/+/, ""));
+  const filtered = only?.length ? slugs.filter(s => only.includes(s)) : slugs;
+  return filtered.map(s => ({ params: { slug: s } }));
 }
-
 const data = await client.fetch(
   groq`*[_type == "microsite" 
         && slug.current in [$slug, "/" + $slug] 

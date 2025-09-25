@@ -10,7 +10,7 @@ export default defineConfig({
   projectId: 'co0d911r',
   dataset: 'production',
 
-  plugins: [structureTool(), visionTool()],
+  plugins: [structureTool()],
 
   schema: {
     types: schemaTypes,

@@ -1,1 +1,3 @@
-export const schemaTypes = []
+import microsite from './microsites'
+
+export const schemaTypes = [microsite]
