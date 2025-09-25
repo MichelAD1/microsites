@@ -1,18 +1,64 @@
 ---
 import { client } from "../lib/sanity";
 import groq from "groq";
+import { PortableText } from "astro-portabletext";
+import { urlFor } from "../lib/image";
 import Layout from "../layouts/Layout.astro";
 
-const microsites: {title: string; slug: {current: string}}[] = await client.fetch(
-  groq`*[_type == "microsite" && defined(slug.current)]|order(title asc){ title, slug }`
+const SLUG = import.meta.env.MICROSITE; // e.g. "dubai" (set per Vercel project)
+
+if (!SLUG) {
+  console.warn("[index] MICROSITE env is missing");
+}
+
+const data = await client.fetch(
+  groq`*[_type == "microsite" 
+        && slug.current in [$slug, "/" + $slug] 
+        && !(_id in path("drafts.**"))][0]{
+    title, description,
+    hero{heading, subheading, image},
+    sections[]{..., body},
+    cta,
+    seo{metaTitle, metaDescription, ogImage}
+  }`,
+  { slug: SLUG }
 );
+
+if (!data) {
+  Astro.response.status = 404;
+}
+
+const og = data?.seo?.ogImage ? urlFor(data.seo.ogImage).width(1200).height(630).url() : undefined;
+const pageTitle = data?.seo?.metaTitle ?? data?.title ?? "Not found";
+const pageDesc  = data?.seo?.metaDescription ?? data?.description ?? "";
 ---
 
-<Layout title="Microsites" description="Browse all microsites">
-  <h1>Microsites</h1>
-  <ul>
-    {microsites.map((m) => (
-      <li><a href={`${m.slug.current}`}>{m.title}</a></li>
-    ))}
-  </ul>
+<Layout title={pageTitle} description={pageDesc} ogImage={og}>
+  {data ? (
+    <>
+      <header>
+        <h1>{data.title}</h1>
+        {data.hero?.subheading && <p>{data.hero.subheading}</p>}
+        {data.hero?.image && (
+          <img src={urlFor(data.hero.image).width(1600).url()} alt={data.title} />
+        )}
+      </header>
+
+      {Array.isArray(data.sections) && data.sections.map((sec) => (
+        <section>
+          {sec.heading && <h2>{sec.heading}</h2>}
+          {sec.body && <PortableText value={sec.body} />}
+        </section>
+      ))}
+
+      {data.cta?.href && (
+        <p><a href={data.cta.href}>{data.cta.label ?? "Learn more"}</a></p>
+      )}
+    </>
+  ) : (
+    <main>
+      <h1>Not found</h1>
+      <p>This microsite doesn’t exist or MICROSITE is not set.</p>
+    </main>
+  )}
 </Layout>
