@@ -3,14 +3,14 @@ interface Props {
   title: string;
   description?: string;
   ogImage?: string;
-  canonical?: string;   // optional override from Sanity
-  noindex?: boolean;    // optional flag from Sanity
+  canonical?: string;
+  noindex?: boolean;
+  cta?: { label?: string; href?: string };
 }
 
-const { title, description, ogImage, canonical, noindex } = Astro.props;
+const { title, description, ogImage, canonical, noindex, cta } = Astro.props;
 
-// Compute a canonical if none is provided, using PUBLIC_BASE_URL (set per Vercel project)
-const base = import.meta.env.PUBLIC_BASE_URL || ""; // e.g., https://dubai.example.com
+const base = import.meta.env.PUBLIC_BASE_URL || "";
 const path = Astro.url.pathname === "/" ? "" : Astro.url.pathname;
 const computedCanonical = canonical ?? (base ? `${base}${path}` : undefined);
 ---
@@ -19,7 +19,6 @@ const computedCanonical = canonical ?? (base ? `${base}${path}` : undefined);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     {computedCanonical && <link rel="canonical" href={computedCanonical} />}
@@ -32,22 +31,30 @@ const computedCanonical = canonical ?? (base ? `${base}${path}` : undefined);
     <meta name="twitter:card" content={ogImage ? "summary_large_image" : "summary"} />
 
     <link rel="preconnect" href="https://cdn.sanity.io" crossorigin />
-
     <link rel="stylesheet" href="/global.css" />
   </head>
   <body>
-    <header>
-      <nav class="nav">
-        <a href="/">Home</a>
-      </nav>
+    <header class="nav">
+      <div class="container nav__inner">
+        <nav class="nav__links">
+          <a href="#about">About</a>
+          <a href="#services">Services</a>
+          <a href="#faq">FAQ</a>
+          <a href="#contact">Contact</a>
+          <a href="#privacy">Privacy</a>
+        </nav>
+        {cta?.href && <a class="btn btn--primary" href={cta.href}>{cta.label ?? "Get Started"}</a>}
+      </div>
     </header>
 
     <main>
       <slot />
     </main>
 
-    <footer>
-      <p>© {new Date().getFullYear()} My Company</p>
+    <footer class="footer">
+      <div class="container">
+        <p>© {new Date().getFullYear()} My Company</p>
+      </div>
     </footer>
   </body>
 </html>

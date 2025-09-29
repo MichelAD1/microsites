@@ -5,11 +5,7 @@ import { PortableText } from "astro-portabletext";
 import { urlFor } from "../lib/image";
 import Layout from "../layouts/Layout.astro";
 
-const SLUG = import.meta.env.MICROSITE; // e.g. "dubai" (set per Vercel project)
-
-if (!SLUG) {
-  console.warn("[index] MICROSITE env is missing");
-}
+const SLUG = import.meta.env.MICROSITE; // e.g. "dubai"
 
 const data = await client.fetch(
   groq`*[_type == "microsite" 
@@ -28,35 +24,101 @@ if (!data) {
   Astro.response.status = 404;
 }
 
+const features = Array.isArray(data?.sections)
+  ? data.sections.filter((s: any) => s._type === "feature")
+  : [];
+const faqs = Array.isArray(data?.sections)
+  ? data.sections.filter((s: any) => s._type === "faq")
+  : [];
+
+const primaryFeature = features[0];
+const moreFeatures = features.slice(1);
+
 const og = data?.seo?.ogImage ? urlFor(data.seo.ogImage).width(1200).height(630).url() : undefined;
 const pageTitle = data?.seo?.metaTitle ?? data?.title ?? "Not found";
 const pageDesc  = data?.seo?.metaDescription ?? data?.description ?? "";
+const heroImg   = data?.hero?.image ? urlFor(data.hero.image).width(1600).url() : undefined;
+
+const ctaHref  = data?.cta?.href ?? "#contact";
+const ctaLabel = data?.cta?.label ?? "Get Started";
 ---
 
-<Layout title={pageTitle} description={pageDesc} ogImage={og}>
+<Layout title={pageTitle} description={pageDesc} ogImage={og} cta={{ label: ctaLabel, href: ctaHref }}>
   {data ? (
     <>
-      <header>
-        <h1>{data.title}</h1>
-        {data.hero?.subheading && <p>{data.hero.subheading}</p>}
-        {data.hero?.image && (
-          <img src={urlFor(data.hero.image).width(1600).url()} alt={data.title} />
-        )}
+      <!-- NAV target anchors -->
+      <a id="top" />
+      <a id="about" />
+
+      <!-- HERO -->
+      <header class="hero container">
+        <div class="hero__left">
+          <h1 class="hero__title">{data.title}</h1>
+          {data.hero?.heading && <p class="hero__sub">{data.hero.heading}</p>}
+        </div>
+        <div class="hero__right">
+          <a class="btn btn--primary" href={ctaHref}>{ctaLabel}</a>
+        </div>
       </header>
 
-      {Array.isArray(data.sections) && data.sections.map((sec) => (
-        <section>
-          {sec.heading && <h2>{sec.heading}</h2>}
-          {sec.body && <PortableText value={sec.body} />}
+      <!-- LEAD PARAGRAPH -->
+      {(data.description || primaryFeature?.body) && (
+        <section class="lead container">
+          {data.hero?.subheading && <p class="lead__text">{data.hero.subheading}</p>}
+          {!data.description && primaryFeature?.body && <PortableText value={primaryFeature.body} />}
         </section>
-      ))}
-
-      {data.cta?.href && (
-        <p><a href={data.cta.href}>{data.cta.label ?? "Learn more"}</a></p>
       )}
+
+      <!-- SPLIT SECTION (H2 + text + button | image) -->
+      {(primaryFeature || heroImg) && (
+        <section id="services" class="split container">
+          <div class="split__left">
+            {primaryFeature?.heading && <h2 class="h2">{primaryFeature.heading}</h2>}
+            {primaryFeature?.body && <div class="prose"><PortableText value={primaryFeature.body} /></div>}
+            <a class="btn btn--ghost" href={ctaHref}>Read More</a>
+          </div>
+          <div class="split__right">
+            {heroImg ? <img src={heroImg} alt={data.title} loading="lazy" /> : <div class="img-placeholder">Image</div>}
+          </div>
+        </section>
+      )}
+
+      <!-- MORE FEATURES (optional grid) -->
+      {moreFeatures.length > 0 && (
+        <section class="features container">
+          {moreFeatures.map((f) => (
+            <article class="card">
+              {f.heading && <h3 class="card__title">{f.heading}</h3>}
+              {f.body && <div class="card__body prose"><PortableText value={f.body} /></div>}
+            </article>
+          ))}
+        </section>
+      )}
+
+      <!-- FAQ (accordion) -->
+      {faqs.length > 0 && (
+        <section id="faq" class="faq container">
+          <h2 class="h2">Frequently Asked Questions</h2>
+          <div class="faq__items">
+            {faqs.map((q) => (
+              <details class="faq__item">
+                <summary class="faq__q">{q.q}</summary>
+                <div class="faq__a prose">
+                  {q.a ? <PortableText value={q.a} /> : null}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <!-- FOOTER CTA -->
+      <section id="contact" class="cta container">
+        <a class="btn btn--primary btn--lg" href={ctaHref}>{ctaLabel}</a>
+      </section>
     </>
   ) : (
-    <main>
+    <main class="container">
       <h1>Not found</h1>
       <p>This microsite doesn’t exist or MICROSITE is not set.</p>
     </main>
