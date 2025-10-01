@@ -1,5 +1,12 @@
-// @ts-check
-import { defineConfig } from "astro/config";
-import vercel from "@astrojs/vercel/static"; // static output
-// @ts-ignore
-export default defineConfig({ adapter: vercel() });
+import netlify from "@astrojs/netlify";
+
+export default defineConfig({
+  adapter: netlify({
+    edge: false,
+  }),
+});
+
+// for vercel
+// import { defineConfig } from "astro/config";
+// import vercel from "@astrojs/vercel/static";
+// export default defineConfig({ adapter: vercel() });
